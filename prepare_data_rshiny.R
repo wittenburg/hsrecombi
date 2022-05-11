@@ -1,10 +1,16 @@
-# Authors: D. Wittenburg, N. Melzer
-# Date: May 6, 2022
+# AUTHORS: D. Wittenburg, N. Melzer
+# DATE: May 11, 2022
 #
-# With this script, output from pipeline "hsrecombi" is prepared as input for R-Shiny app "CLARITY"
+# OBJECTIVE: With this script, output from pipeline "hsrecombi" is prepared as input for R-Shiny app "CLARITY"
 # R-Shiny app is available at https://github.com/nmelzer/CLARITY
 #
-
+# INSTRUCTIONS:
+# Pipeline "hsrecombi" requires make version >= 4.3; this version allows for grouped targeting.
+# Ensure that required R packages have been installed, then call "make all".
+# Afterwards, run "prepare_data_rshiny.R" to have your data ready for R-Shiny app. The data are content of folder CLARITY/extdata.
+# Unless working with nchr = 29 autosomes of the cattle genome, modifications to the app become necessary.
+#
+#
 library(magrittr)
 
 nchr <- 2
@@ -93,7 +99,7 @@ save(adjacentRecRate, file = file.path(path.input, "adjacentRecRate.Rdata"))
 
 
 
-### 4: table of misplaced markers
+### 4: table of misplaced markers (applies to cattle genome)
 dirs0 <- list.dirs(recursive = F)
 curl::curl_download(url ="https://www.radar-service.eu/radar-backend/archives/TKLpmZWNBmENepNd/versions/1/content",  "tmp.tar")
 untar('tmp.tar')
@@ -108,7 +114,7 @@ filesstrings::dir.remove(dirs1[!(dirs1 %in% dirs0)])
 
 
 
-### 5: table of general problematic regions
+### 5: table of general problematic regions (applies to cattle genome)
 curl::curl_download(url = "https://onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2Fage.13205&file=age13205-sup-0004-TableS2.xlsx", "tmp.xlsx")
 generalProblematicRegions <- readxl::read_xlsx("tmp.xlsx")
 file.remove('tmp.xlsx')
