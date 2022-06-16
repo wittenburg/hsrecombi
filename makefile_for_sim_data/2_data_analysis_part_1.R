@@ -23,8 +23,8 @@ X <- as.matrix(genomatrix[, -c(1:6)])
 # 3: Assign daughters to sire IDs
 daughterSire <- genomatrix$PAT
 
-# 4: Estimate sire haplotypes and format data 
-hap <- makehappm(unique(daughterSire), daughterSire, X)
+# 4: Estimate sire haplotypes and format data (exclude data when sire is unknown)
+hap <- makehappm(setdiff(unique(daughterSire), "0"), daughterSire, X)
 save('hap', file = file.path(path, paste0('hsphase_output_chr', chr, '.RData')))
 
 # Check order and dimension
