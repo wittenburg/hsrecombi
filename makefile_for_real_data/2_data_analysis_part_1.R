@@ -42,7 +42,7 @@ if(nrow(final) == 0) message(paste('no result on chr', chr))
 excl <- checkCandidates(final)
 
 
-save(list = c('final', 'locus_Mb'), file = file.path(path, paste0("Results_chr", chr, ".RData")))
+save(list = c('final', 'map'), file = file.path(path, paste0("Results_chr", chr, ".RData")))
 write.table(excl, file = file.path(path, paste0('candidates_chr', chr, '.txt')), row.names = F, col.names = F)
 
 Sys.info()
