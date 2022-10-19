@@ -1,16 +1,5 @@
-# AUTHORS: D. Wittenburg, N. Melzer
-# DATE: June 14, 2022
-#
-# OBJECTIVE: With this script, output from pipeline "hsrecombi" is prepared as input for R-Shiny app "CLARITY"
-# R-Shiny app is available at https://github.com/nmelzer/CLARITY
-#
-# INSTRUCTIONS:
-# Pipeline "hsrecombi" requires make version >= 4.3; this version allows for grouped targeting.
-# Ensure that required R packages have been installed, then call "make all".
-# Afterwards, run "prepare_data_rshiny_short.R" to have your data ready for the R-Shiny app. The data are content of folder CLARITY/extdata.
-# Unless working with nchr = 29 autosomes of the cattle genome, modifications to the app become necessary.
-#
-#
+### Output from pipeline "hsrecombi" is prepared as input for R-Shiny app "CLARITY"
+
 library(magrittr)
 
 nchr <- 2
@@ -18,7 +7,7 @@ nchr <- 2
 path.input <- "input_rshiny"
 dir.create(path.input, showWarnings = F)
 
-path.results <- read.table("directory.tmp")[1]
+path.results <- read.table("directory.tmp")[1, 1]
 
 
 ### 1: table of genetic map with all markers
@@ -40,15 +29,16 @@ for(chr in 1:nchr){
   
   dis <- c(NA, diff(pos$pos.Mb))
   geneticMap[[chr]] <- data.frame(Chr = chr, Name = pos$name, Mbp_position = pos$pos.Mb, 
-                           bp_position = pos$pos.Mb * 1e+6, cM_likelihood = gen.em, 
-                           cM_deterministic = gen.hs, recrate_adjacent_deterministic = rec.hs, 
-                           Mbp_inter_marker_distanc = dis)
+                           bp_position = pos$pos.Mb * 1e+6, cM_likelihood = round(gen.em, 8),
+                           cM_deterministic = round(gen.hs, 8), recrate_adjacent_deterministic = rec.hs, 
+                           Mbp_inter_marker_distanc = dis, stringsAsFactors = FALSE)
 }
 
 geneticMap <- rlist::list.rbind(geneticMap)
 sum(is.na(geneticMap$cM_likelihood)) # no analysis at these SNPs because of overall homozygosity (with few exceptions)
 
 save(geneticMap, file = file.path(path.input, "geneticMap.Rdata"))
+#WriteXLS::WriteXLS(geneticMap, 'GeneticMap.xlsx', na = "NA", SheetNames = Sys.Date())
 
 
 
@@ -86,43 +76,20 @@ for(i in 2:ncol(tab)){
   }
 }
 
-genetic_map_summary <- rbind(tab, end)
+genetic_map_summary <- rbind(tab, end) %>% as.data.frame(., stringsAsFactors = FALSE)
 save(genetic_map_summary, file = file.path(path.input, "genetic_map_summary.Rdata"))
 
 
 
 ### 3: table of recombination rates between adjacent SNPs for hotspot analysis 
-adjacentRecRate <- data.frame(Chr = geneticMap$Chr, SNP = geneticMap$Name, cM = geneticMap$cM_deterministic, 
-                              BP = geneticMap$bp_position, Theta = geneticMap$recrate_adjacent_deterministic, 
-                              Dis = c(NA, diff(geneticMap$bp_position)))
+adjacentRecRate <- data.frame(Chr = geneticMap$Chr, SNP = geneticMap$Name, cM = round(geneticMap$cM_deterministic, 8),
+                              BP = geneticMap$bp_position, Theta = round(geneticMap$recrate_adjacent_deterministic, 8),
+                              Dis = c(NA, diff(geneticMap$bp_position)), stringsAsFactors = FALSE)
 save(adjacentRecRate, file = file.path(path.input, "adjacentRecRate.Rdata"))
 
 
 
-### 4: table of misplaced markers (applies to cattle genome)
-dirs0 <- list.dirs(recursive = F)
-download.file(url = "https://www.radar-service.eu/radar-backend/archives/TKLpmZWNBmENepNd/versions/1/content",  destfile = "tmp.tar")
-untar('tmp.tar')
-file.remove('tmp.tar')
-
-dat.tmp <- list.files(pattern = "MisplacedSNPs_problem_regions_paper", recursive = T)
-misplacedMarkers <- readxl::read_xlsx(dat.tmp)
-save(misplacedMarkers, file = file.path(path.input, "misplacedMarkers.Rdata"))
-
-dirs1 <- list.dirs(recursive = F) 
-filesstrings::dir.remove(dirs1[!(dirs1 %in% dirs0)])
-
-
-
-### 5: table of general problematic regions (applies to cattle genome)
-download.file(url = "https://onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111/age.13205&file=age13205-sup-0004-TableS2.xlsx", destfile = "tmp.xlsx", mode = "wb")
-generalProblematicRegions <- readxl::read_xlsx("tmp.xlsx")
-file.remove('tmp.xlsx')
-save(generalProblematicRegions, file = file.path(path.input, "generalProblematicRegions.Rdata"))
-
-
-
-### 6: table of parameters for genetic-mapping functions and data for curves
+### 4 and 5: table of parameters for genetic-mapping functions and reduced data for scatter plots
 set.seed(10)
 source('mapping_functions.R')
 
@@ -172,9 +139,9 @@ for (chr in 1:nchr){
     s[N] <- mean((karlin(N, final$dist_M, inverse = T) - final$theta) ^ 2)
   } 
   
-  out <- rbind(out, c(chr, sln.haldane$value, sln.haldane$par, 
+  out <- rbind(out, c(chr, sln.haldane$value, sln.haldane$par,
                       sln.rao$value, sln.rao$par, sln.felsenstein$value, sln.felsenstein$par,
-                      min(s, na.rm = T), which.min(s)))
+                      min(s, na.rm = T), which.min(s))) %>% round(., 8)
   
   r <- seq(0, max(final$dist_M), length = 101)
   y.hal <- haldane(sln.haldane$par * r, T)
@@ -188,7 +155,7 @@ for (chr in 1:nchr){
   red.final <- cbind(final$dist_M, final$theta)
   colnames(red.final) <- c("dist_M", "theta")
   
-  max.plot <- 450000
+  max.plot <- 200000
   dim.red <- nrow(red.final)
 
   gg <- sqrt((red.final[2:dim.red, 1] - red.final[1:(dim.red - 1), 1])^2 + 
@@ -217,5 +184,5 @@ colnames(out) <- c('Chr', 'Haldane_scaled_mse', 'Haldane_scaled_par',
                    'Rao_mse', 'Rao_par', 'Felsenstein_mse', 'Felsenstein_par', 
                    'Karlin_mse', 'Karlin_par')
 
-save(list = 'out', file = file.path(path.input, 'bestmapfun.RData'))
+save(list = 'out', file = file.path(path.input, 'bestmapfun.Rdata'))
 

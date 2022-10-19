@@ -50,8 +50,8 @@ map.snp <- lapply(founderPop@genMap, function(z) z * 100)
 ## ----plink-format-------------------------------------------------------------
 map <- data.frame(Chr = rep(1:length(map.snp), unlist(lapply(map.snp, length))), 
                   Name = paste0('SNP', 1:length(unlist(map.snp))),
-                  locus_Mb = unlist(map.snp), 
-                  locus_bp = unlist(map.snp) * 1e+6)
+                  locus_Mb = round(unlist(map.snp), 6), 
+                  locus_bp = round(unlist(map.snp) * 1e+6))
 
 colnames(X) <- map$Name
 FID <- 'FAM001'
