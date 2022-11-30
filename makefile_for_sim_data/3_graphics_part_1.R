@@ -34,7 +34,7 @@ for(cand in excl){
     scale_fill_gradientn(colours = c('yellow', 'red'), limits = c(0, 1+1e-10), na.value = 'white')
 # -> conspicious only if band of increased values in orange
 
-  ggsave(file.path(path, paste0('chr_', chr, '_cand_', cand, '.pdf')), gg1)
+  ggsave(file.path(path, paste0('chr_', chr, '_cand_', cand, '.png')), plot = gg1, device = 'png')
 }
 
 ## ----keep index of SNPs which have been inspected and confirmed---------------

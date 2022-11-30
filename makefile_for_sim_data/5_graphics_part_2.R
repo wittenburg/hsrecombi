@@ -14,7 +14,7 @@ data <- data.frame(Chr = rep(chr, length(pos$pos.cM)),
                    Mbp = pos$pos.Mb, cM = pos$pos.cM)
 gg2 <- ggplot(data, aes(x = Mbp, y = cM)) + geom_point(na.rm = T)
 
-ggsave(file.path(path, paste0('genetic_map_chr', chr, '.pdf')), gg2)
+ggsave(file.path(path, paste0('genetic_map_chr', chr, '.png')), plot = gg2, device = 'png')
 
 ## ----check simulated recombination rates--------------------------------------
 load(popfile)
@@ -22,7 +22,9 @@ sim.cM <- cumsum(probRec[[chr]]) * 100
 
 ## ----check outcome of deterministic approach----------------------------------
 load(hsoutfile)
-hsphase.cM <- c(0, cumsum(hap$probRec)) * 100
+hsphase.cM <- rep(NA, length(hap$probRec))
+hsphase.cM[!is.na(hap$probRec)] <- cumsum(hap$probRec[!is.na(hap$probRec)]) * 100
+hsphase.cM <- c(0, hsphase.cM)
 
 ## ----comparison of methods----------------------------------------------------
 comp <- data.frame(pos = pos$pos.Mb, lik.cM = pos$pos.cM, hsphase.cM = hsphase.cM, sim.cM = sim.cM)
@@ -34,6 +36,6 @@ gg3 <- ggplot(comp) +
   scale_color_manual(values = c("black", "grey", "blue"),
                      labels = c("likelihood-based", "deterministic", "simulated"))
 
-ggsave(file.path(path, paste0('genetic_map_all_methods_chr', chr, '.pdf')), gg3)
+ggsave(file.path(path, paste0('genetic_map_all_methods_chr', chr, '.png')), plot = gg3, device = 'png')
 
 Sys.info()

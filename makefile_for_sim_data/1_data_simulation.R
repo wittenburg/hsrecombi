@@ -37,7 +37,7 @@ for(chr in 1:nchr){
   probRec[[chr]] <- colMeans(co.pat)
 }
 
-save(list = c('SP', 'founderPop', 'pop', 'my_pop', 'ntotal', 'probRec'), file = file.path(path, 'pop.RData'))
+save(list = c('SP', 'founderPop', 'pop', 'my_pop', 'ntotal', 'probRec'), file = file.path(path, 'pop.Rdata'), compress = 'xz')
 
 ## ----genetic data-------------------------------------------------------------
 PAT <- my_pop@father

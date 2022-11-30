@@ -25,7 +25,7 @@ daughterSire <- genomatrix$PAT
 
 # 4: Estimate sire haplotypes and format data (exclude data when sire is unknown)
 hap <- makehappm(setdiff(unique(daughterSire), "0"), daughterSire, X)
-save('hap', file = file.path(path, paste0('hsphase_output_chr', chr, '.RData')))
+save('hap', file = file.path(path, paste0('hsphase_output_chr', chr, '.Rdata')), compress = 'xz')
 
 # Check order and dimension
 io <- sapply(1:nrow(map), function(z){grepl(x = colnames(X)[z], pattern = map$Name[z])})
@@ -42,7 +42,7 @@ if(nrow(final) == 0) message(paste('no result on chr', chr))
 excl <- checkCandidates(final)
 
 
-save(list = c('final', 'map'), file = file.path(path, paste0("Results_chr", chr, ".RData")))
+save(list = c('final', 'map'), file = file.path(path, paste0("Results_chr", chr, ".Rdata")), compress = 'xz')
 write.table(excl, file = file.path(path, paste0('candidates_chr', chr, '.txt')), row.names = F, col.names = F)
 
 Sys.info()

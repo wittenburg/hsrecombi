@@ -1,5 +1,5 @@
 ### Output from pipeline "hsrecombi" is prepared as input for R-Shiny app "CLARITY"
-
+library(hsrecombi)
 library(magrittr)
 
 nchr <- 2
@@ -14,8 +14,8 @@ path.results <- read.table("directory.tmp")[1, 1]
 geneticMap <- list()
 for(chr in 1:nchr){
   cat('Chr', chr, '\n')
-  load(file.path(path.results, paste0('geneticpositions_chr', chr, '.RData')))
-
+  load(file.path(path.results, paste0('geneticpositions_chr', chr, '.Rdata')))
+  
   gen.em <- pos$pos.cM
   id <- gen.em < 0
   if(sum(id, na.rm = T) > 0){
@@ -23,21 +23,33 @@ for(chr in 1:nchr){
     gen.em[id] <- 0 # due to numerics in optimization approach (even though restrictions have been set properly)
   }
   
-  load(file.path(path.results, paste0('hsphase_output_chr', chr, '.RData')))
-  gen.hs <- c(0, cumsum(hap$probRec)) * 100
+  load(file.path(path.results, paste0('hsphase_output_chr', chr, '.Rdata')))
+  gen.hs <- rep(NA, length(hap$probRec))
+  gen.hs[!is.na(hap$probRec)] <- cumsum(hap$probRec[!is.na(hap$probRec)]) * 100
+  gen.hs <- c(0, gen.hs)
   rec.hs <- c(0, hap$probRec)
   
-  dis <- c(NA, diff(pos$pos.Mb))
+  dis <- c(0, diff(pos$pos.Mb))
   geneticMap[[chr]] <- data.frame(Chr = chr, Name = pos$name, Mbp_position = pos$pos.Mb, 
-                           bp_position = pos$pos.Mb * 1e+6, cM_likelihood = round(gen.em, 8),
-                           cM_deterministic = round(gen.hs, 8), recrate_adjacent_deterministic = rec.hs, 
-                           Mbp_inter_marker_distanc = dis, stringsAsFactors = FALSE)
+                                  bp_position = pos$pos.Mb * 1e+6, cM_likelihood = round(gen.em, 8),
+                                  cM_deterministic = round(gen.hs, 8), recrate_adjacent_deterministic = round(rec.hs, 8), 
+                                  Mbp_inter_marker_distanc = round(dis, 8), stringsAsFactors = FALSE)
 }
 
 geneticMap <- rlist::list.rbind(geneticMap)
 sum(is.na(geneticMap$cM_likelihood)) # no analysis at these SNPs because of overall homozygosity (with few exceptions)
 
-save(geneticMap, file = file.path(path.input, "geneticMap.Rdata"))
+# list of misplaced markers
+geneticMap$candidate_misplacement <- 0
+for(chr in 1:29) {
+  candfile <- file.path(path.results, paste0('candidates_chr', chr, '_verified.txt'))
+  if(file.exists(candfile)) {
+    list.excl <- read.table(candfile)[, 1]
+    geneticMap$candidate_misplacement[geneticMap$Chr == chr][list.excl] <- 1
+  }
+}
+
+save(geneticMap, file = file.path(path.input, "geneticMap.Rdata"), compress = 'xz')
 #WriteXLS::WriteXLS(geneticMap, 'GeneticMap.xlsx', na = "NA", SheetNames = Sys.Date())
 
 
@@ -45,15 +57,15 @@ save(geneticMap, file = file.path(path.input, "geneticMap.Rdata"))
 ### 2: table of genetic map summary
 tab <- c()
 for(Chr in 1:nchr){
-  load(file.path(path.results, paste0('hsphase_output_chr', Chr, '.RData'))) # estimated crossover events
+  load(file.path(path.results, paste0('hsphase_output_chr', Chr, '.Rdata'))) # estimated crossover events
   tab.chr <- geneticMap[geneticMap$Chr == Chr, ]
   nSNP <- nrow(tab.chr)
   max_bp <- max(tab.chr$bp_position)
   Gap_bp <- max(diff(tab.chr$bp_position))
   Space_kb <- mean(diff(tab.chr$bp_position)) * 1e-3
   nRec <- lapply(hap$numberRec, function(z){sum(z, na.rm = T)}) %>% unlist %>% sum
-  D_M <- max(tab.chr$cM_deterministic) / 100
-  cMMb_D <- max(tab.chr$cM_deterministic) / (max_bp * 1e-6)
+  D_M <- max(tab.chr$cM_deterministic, na.rm = T) / 100
+  cMMb_D <- max(tab.chr$cM_deterministic, na.rm = T) / (max_bp * 1e-6)
   L_M <- max(tab.chr$cM_likelihood, na.rm = T) / 100
   cMMb_L <- max(tab.chr$cM_likelihood, na.rm = T) / (max_bp * 1e-6)
   tab <- rbind(tab, c(Chr, nSNP, max_bp, Gap_bp, Space_kb, nRec, D_M, cMMb_D, L_M, cMMb_L))
@@ -77,28 +89,27 @@ for(i in 2:ncol(tab)){
 }
 
 genetic_map_summary <- rbind(tab, end) %>% as.data.frame(., stringsAsFactors = FALSE)
-save(genetic_map_summary, file = file.path(path.input, "genetic_map_summary.Rdata"))
+save(genetic_map_summary, file = file.path(path.input, "genetic_map_summary.Rdata"), compress = 'xz')
 
 
 
 ### 3: table of recombination rates between adjacent SNPs for hotspot analysis 
 adjacentRecRate <- data.frame(Chr = geneticMap$Chr, SNP = geneticMap$Name, cM = round(geneticMap$cM_deterministic, 8),
                               BP = geneticMap$bp_position, Theta = round(geneticMap$recrate_adjacent_deterministic, 8),
-                              Dis = c(NA, diff(geneticMap$bp_position)), stringsAsFactors = FALSE)
-save(adjacentRecRate, file = file.path(path.input, "adjacentRecRate.Rdata"))
+                              Dis = c(0, diff(geneticMap$bp_position)), stringsAsFactors = FALSE)
+save(adjacentRecRate, file = file.path(path.input, "adjacentRecRate.Rdata"), compress = 'xz')
 
 
 
 ### 4 and 5: table of parameters for genetic-mapping functions and reduced data for scatter plots
 set.seed(10)
-source('mapping_functions.R')
 
 out <- c()
 for (chr in 1:nchr){
   store <- list()
   
-  load(file.path(path.results, paste0('geneticpositions_chr', chr, '.RData')))
-  load(file.path(path.results, paste0('Results_chr', chr, '.RData')))
+  load(file.path(path.results, paste0('geneticpositions_chr', chr, '.Rdata')))
+  load(file.path(path.results, paste0('Results_chr', chr, '.Rdata')))
   
   genmap <- pos$pos.cM
   final$dist_M <- (genmap[final$SNP2] - genmap[final$SNP1]) / 100
@@ -157,16 +168,13 @@ for (chr in 1:nchr){
   
   max.plot <- 200000
   dim.red <- nrow(red.final)
-
-  gg <- sqrt((red.final[2:dim.red, 1] - red.final[1:(dim.red - 1), 1])^2 + 
-            (red.final[2:dim.red, 2] - red.final[1:(dim.red - 1), 2])^2)
-  cc <- 1; c2 <- 0.0
   df2 <- red.final
+  
   if(dim.red >= max.plot){
-    while(cc != 0){
-      posit <- which(gg > (0.03 - c2))
-      if(length(posit) >= max.plot) cc <- 0 else c2 <- c2 + 0.001
-    }
+    gg <- sqrt((red.final[2:dim.red, 1] - red.final[1:(dim.red - 1), 1])^2 + 
+                 (red.final[2:dim.red, 2] - red.final[1:(dim.red - 1), 2])^2)
+    prozent <- max.plot / dim.red
+    posit <- which(gg > quantile(gg, 1 - prozent))
     df2 <- red.final[posit, ]
   }
   
@@ -184,5 +192,5 @@ colnames(out) <- c('Chr', 'Haldane_scaled_mse', 'Haldane_scaled_par',
                    'Rao_mse', 'Rao_par', 'Felsenstein_mse', 'Felsenstein_par', 
                    'Karlin_mse', 'Karlin_par')
 
-save(list = 'out', file = file.path(path.input, 'bestmapfun.Rdata'))
+save(list = 'out', file = file.path(path.input, 'bestmapfun.Rdata'), compress = 'xz')
 

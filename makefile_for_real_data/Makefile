@@ -1,5 +1,5 @@
 # Authors: P. O. Westermark, D. Wittenburg
-# Date: Jan 8, 2021
+# Date: Nov 30, 2022
 
 # for debugging
 print-%:
@@ -30,7 +30,7 @@ rbatch_chr = Rscript --verbose $^ $* &>> $(res_dir)/log.txt
 
 # 2_data_analysis_part1.R accepts an argument chr with chromosome number 
 # (the matched %, substituted in as $* in rbatch_chr)
-$(res_dir)/hsphase_output_chr%.RData $(res_dir)/Results_chr%.RData \
+$(res_dir)/hsphase_output_chr%.Rdata $(res_dir)/Results_chr%.Rdata \
 $(res_dir)/candidates_chr%.txt: 2_data_analysis_part_1.R $(dat_dir)/map_chr%.map \
 $(dat_dir)/sample_data_chr%.raw 
 	mkdir -p $(res_dir)
@@ -41,19 +41,20 @@ $(dat_dir)/sample_data_chr%.raw
 # NOTE: necessary to check all graphic pdf's and alter candidates_chr%_verified
 # manually, otherwise it contains NA for no SNP to be discarded!
 $(res_dir)/candidates_chr%_verified.txt: 3_graphics_part_1.R \
-$(res_dir)/Results_chr%.RData $(res_dir)/candidates_chr%.txt
+$(res_dir)/Results_chr%.Rdata $(res_dir)/candidates_chr%.txt
 	$(rbatch_chr)
 
-$(res_dir)/geneticpositions_chr%.RData: 4_data_analysis_part_2.R \
-$(res_dir)/Results_chr%.RData $(res_dir)/candidates_chr%_verified.txt
+$(res_dir)/geneticpositions_chr%.Rdata $(res_dir)/hsphase_output_chr%.Rdata: \
+4_data_analysis_part_2.R $(res_dir)/Results_chr%.Rdata \
+$(res_dir)/candidates_chr%_verified.txt $(dat_dir)/sample_data_chr%.raw
 	$(rbatch_chr)
 
 $(res_dir)/genetic_map_chr%.pdf: 5a_graphics_part_2.R \
-$(res_dir)/geneticpositions_chr%.RData $(res_dir)/hsphase_output_chr%.RData
+$(res_dir)/geneticpositions_chr%.Rdata $(res_dir)/hsphase_output_chr%.Rdata
 	$(rbatch_chr)
 
 all: $(addprefix $(res_dir)/geneticpositions_chr, \
-$(addsuffix .RData, $(shell seq 1 $(nchr)))) \
+$(addsuffix .Rdata, $(shell seq 1 $(nchr)))) \
 $(addprefix $(res_dir)/genetic_map_chr, \
 $(addsuffix .pdf, $(shell seq 1 $(nchr))))
 
