@@ -19,7 +19,7 @@ save(list = 'pos', file =  file.path(path, paste0('geneticpositions_chr', chr, '
 
 
 ## ----deterministic approach revisited with misplaced markers excluded---------
-if(!is.na(excl)){
+if(any(!is.na(excl))){
   # 2: Genotype matrix
   genomatrix <- data.table::fread(genofile)
   X <- as.matrix(genomatrix[, -c(1:6)])
