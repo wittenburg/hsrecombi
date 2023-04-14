@@ -23,6 +23,7 @@ if(any(!is.na(excl))){
   # 2: Genotype matrix
   genomatrix <- data.table::fread(genofile)
   X <- as.matrix(genomatrix[, -c(1:6)])
+  X[is.na(X)] <- 9 # required for hsphase
   
   # 3: Assign daughters to sire IDs
   daughterSire <- genomatrix$PAT

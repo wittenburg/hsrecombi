@@ -14,11 +14,11 @@ chr <- as.numeric(args[3])
 # 1: Physical  map
 map <- read.table(mapfile, col.names = c('Chr', 'Name', 'locus_Mb', 'locus_bp'), colClasses = c('integer', 'character', 'numeric', 'integer'))
 map$SNP <- 1:nrow(map)
-locus_Mb <- map$locus_Mb
 
 # 2: Genotype matrix
 genomatrix <- data.table::fread(genofile)
 X <- as.matrix(genomatrix[, -c(1:6)])
+X[is.na(X)] <- 9 # required for hsphase
 
 # 3: Assign daughters to sire IDs
 daughterSire <- genomatrix$PAT
