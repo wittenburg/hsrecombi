@@ -22,12 +22,9 @@ sim.cM <- cumsum(probRec[[chr]]) * 100
 
 ## ----check outcome of deterministic approach----------------------------------
 load(hsoutfile)
-hsphase.cM <- rep(NA, length(hap$probRec))
-hsphase.cM[!is.na(hap$probRec)] <- cumsum(hap$probRec[!is.na(hap$probRec)]) * 100
-hsphase.cM <- c(0, hsphase.cM)
 
 ## ----comparison of methods----------------------------------------------------
-comp <- data.frame(pos = pos$pos.Mb, lik.cM = pos$pos.cM, hsphase.cM = hsphase.cM, sim.cM = sim.cM)
+comp <- data.frame(pos = pos$pos.Mb, lik.cM = pos$pos.cM, hsphase.cM = hap$gen, sim.cM = sim.cM)
 gg3 <- ggplot(comp) +
   geom_point(aes(x = pos, y = lik.cM, color = '1'), na.rm = T) +    
   geom_point(aes(x = pos, y = hsphase.cM, color = '2')) +

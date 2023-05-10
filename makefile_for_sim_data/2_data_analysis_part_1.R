@@ -1,5 +1,5 @@
 library(hsrecombi)
-
+source('functions_for_check.R')
 args <- commandArgs(trailingOnly = TRUE)
 path <- read.table("directory.tmp")[1, 1]
 
@@ -12,8 +12,7 @@ chr <- as.numeric(args[3])
 ## ----recombination rate estimation--------------------------------------------
 
 # 1: Physical  map
-map <- read.table(mapfile, col.names = c('Chr', 'Name', 'locus_Mb', 'locus_bp'), colClasses = c('integer', 'character', 'numeric', 'integer'))
-map$SNP <- 1:nrow(map)
+map <- read.table(mapfile, col.names = c('Chr', 'SNP', 'locus_Mb', 'locus_bp'), colClasses = c('integer', 'character', 'numeric', 'integer'))
 
 # 2: Genotype matrix
 genomatrix <- data.table::fread(genofile)
@@ -28,18 +27,18 @@ hap <- makehappm(setdiff(unique(daughterSire), "0"), daughterSire, X)
 save('hap', file = file.path(path, paste0('hsphase_output_chr', chr, '.Rdata')), compress = 'xz')
 
 # Check order and dimension
-io <- sapply(1:nrow(map), function(z){grepl(x = colnames(X)[z], pattern = map$Name[z])})
+io <- sapply(1:nrow(map), function(z){grepl(x = colnames(X)[z], pattern = map$SNP[z])})
 if(sum(io) != nrow(map)) stop("ERROR in dimension")
 
 # 5: Estimate recombination rates
-res <- hsrecombi(hap, X, map$SNP)
+res <- hsrecombi(hap, X)
 final <- editraw(res, map)
 
 if(nrow(final) == 0) message(paste('no result on chr', chr))
 
 
 ## ----candidates of misplaced SNPs---------------------------------------------
-excl <- checkCandidates(final)
+excl <- checkCandidates(final, map)
 
 
 save(list = c('final', 'map'), file = file.path(path, paste0("Results_chr", chr, ".Rdata")), compress = 'xz')

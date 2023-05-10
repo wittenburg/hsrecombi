@@ -1,5 +1,5 @@
 library(hsrecombi)
-
+source('functions_for_check.R')
 args <- commandArgs(trailingOnly = TRUE)
 path <- read.table("directory.tmp")[1, 1]
 
@@ -12,9 +12,7 @@ chr <- as.numeric(args[4])
 load(resfile)
 excl <- read.table(candfile)[, 1]
 
-out <- geneticPosition(final, exclude = excl)
-pos <- list(pos.cM = c(out, rep(NA, length(map$locus_Mb) - length(out))), pos.Mb = map$locus_Mb, name = map$Name)
-
+pos <- geneticPosition(final, map, exclude = excl)
 save(list = 'pos', file =  file.path(path, paste0('geneticpositions_chr', chr, '.Rdata')), compress = 'xz')
 
 

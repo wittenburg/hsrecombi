@@ -16,11 +16,13 @@ excl <- read.table(candfile)[, 1]
 for(cand in excl){
 ## ----Heatmap plot of recombination rates for visual verification--------------
 
-  win <- cand + (-100:100)
-  win <- win[(win >= 1) & (win <= max(final$SNP2))]
+  win <- match(cand, map$SNP) + (-100:100)
+  win <- win[(win >= 1) & (win <= nrow(map))]
   
-  target <- final[(final$SNP1 %in% win) & (final$SNP2 %in% win), ]
-  
+  target <- final[(final$SNP1 %in% map$SNP[win]) & (final$SNP2 %in% map$SNP[win]), ]
+  target$SNP1 <- match(target$SNP1, map$SNP)
+  target$SNP2 <- match(target$SNP2, map$SNP)
+ 
   gg1 <- ggplot(data = target, aes(SNP2, SNP1, fill = theta)) + 
     geom_tile() +
     xlab("Locus 2") +

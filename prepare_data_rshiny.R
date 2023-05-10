@@ -14,25 +14,15 @@ path.results <- read.table("directory.tmp")[1, 1]
 geneticMap <- list()
 for(chr in 1:nchr){
   cat('Chr', chr, '\n')
+  
   load(file.path(path.results, paste0('geneticpositions_chr', chr, '.Rdata')))
-  
-  gen.em <- pos$pos.cM
-  id <- gen.em < 0
-  if(sum(id, na.rm = T) > 0){
-    cat('set to zero', sum(id, na.rm = T), '\n')
-    gen.em[id] <- 0 # due to numerics in optimization approach (even though restrictions have been set properly)
-  }
-  
-  load(file.path(path.results, paste0('hsphase_output_chr', chr, '.Rdata')))
-  gen.hs <- rep(NA, length(hap$probRec))
-  gen.hs[!is.na(hap$probRec)] <- cumsum(hap$probRec[!is.na(hap$probRec)]) * 100
-  gen.hs <- c(0, gen.hs)
-  rec.hs <- c(0, hap$probRec)
-  
   dis <- c(0, diff(pos$pos.Mb))
+  load(file.path(path.results, paste0('hsphase_output_chr', chr, '.Rdata')))
+  
   geneticMap[[chr]] <- data.frame(Chr = chr, Name = pos$name, Mbp_position = pos$pos.Mb, 
-                                  bp_position = pos$pos.Mb * 1e+6, cM_likelihood = round(gen.em, 8),
-                                  cM_deterministic = round(gen.hs, 8), recrate_adjacent_deterministic = round(rec.hs, 8), 
+                                  bp_position = pos$pos.Mb * 1e+6, cM_likelihood = round(pos$pos.cM, 8),
+                                  cM_deterministic = round(hap$gen, 8), 
+                                  recrate_adjacent_deterministic = round(c(0, hap$probRec), 8), 
                                   Mbp_inter_marker_distanc = round(dis, 8), stringsAsFactors = FALSE)
 }
 

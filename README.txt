@@ -12,7 +12,7 @@ An online version of CLARITY is available at https://nmelzer.shinyapps.io/clarit
 INSTRUCTIONS:
 1. The pipeline for creating a genetic map (available in subfolder makefile_for_<real/sim>_data) 
    requires make version >= 4.3; this version allows for grouped targeting.
-   Ensure that required R packages have been installed (hsrecombi, ggplot2; optional: AlphaSimR), 
+   Ensure that required R packages have been installed (hsrecombi >=1.0.0, ggplot2; optional: AlphaSimR), 
    then call "make all". For each chromosome i, marker names, genetic and physical positions are 
    stored as a list in geneticpositions_chr<i>.RData. Further interim results are available.
 2. To prepare input data for the R-Shiny app CLARITY version >= 1.0.0 in the required format, run 

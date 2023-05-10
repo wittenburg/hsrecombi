@@ -17,12 +17,9 @@ ggsave(file.path(path, paste0('genetic_map_chr', chr, '.png')), plot = gg2, devi
 
 ## ----check outcome of deterministic approach----------------------------------
 load(hsoutfile)
-hsphase.cM <- rep(NA, length(hap$probRec))
-hsphase.cM[!is.na(hap$probRec)] <- cumsum(hap$probRec[!is.na(hap$probRec)]) * 100
-hsphase.cM <- c(0, hsphase.cM)
 
 ## ----comparison of methods----------------------------------------------------
-comp <- data.frame(pos = pos$pos.Mb, lik.cM = pos$pos.cM, hsphase.cM = hsphase.cM)
+comp <- data.frame(pos = pos$pos.Mb, lik.cM = pos$pos.cM, hsphase.cM = hap$gen)
 gg3 <- ggplot(comp) +
   geom_point(aes(x = pos, y = lik.cM, color = '1'), na.rm = T) +    
   geom_point(aes(x = pos, y = hsphase.cM, color = '2')) +
