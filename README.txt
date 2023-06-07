@@ -1,5 +1,5 @@
 AUTHORS: D. Wittenburg, N. Melzer
-DATE: November 30, 2022
+DATE: June 7, 2023
 
 OBJECTIVE: 
 Create a breed-specific genetic map from genotypes of half-siblings and interactively visualise the
