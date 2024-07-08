@@ -14,7 +14,7 @@ INSTRUCTIONS:
    requires make version >= 4.3; this version allows for grouped targeting.
    Ensure that required R packages have been installed (hsrecombi >=1.0.0, ggplot2; optional: AlphaSimR), 
    then call "make all". For each chromosome i, marker names, genetic and physical positions are 
-   stored as a list in geneticpositions_chr<i>.RData. Further interim results are available.
+   stored as a list in geneticpositions_chr<i>.Rdata. Further interim results are available.
 2. To prepare input data for the R-Shiny app CLARITY version >= 1.0.0 in the required format, run 
    "prepare_data_rshiny.R" in the same working directory as "make all" (requires R packages 
    magrittr, hsrecombi). The output Rdata will then be content of folder 

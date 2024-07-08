@@ -1,5 +1,5 @@
 library(hsrecombi)
-source('functions_for_check.R')
+
 args <- commandArgs(trailingOnly = TRUE)
 path <- read.table("directory.tmp")[1, 1]
 
