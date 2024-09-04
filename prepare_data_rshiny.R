@@ -20,7 +20,7 @@ for(chr in 1:nchr){
   load(file.path(path.results, paste0('hsphase_output_chr', chr, '.Rdata')))
   
   geneticMap[[chr]] <- data.frame(Chr = chr, Name = pos$name, Mbp_position = pos$pos.Mb, 
-                                  bp_position = pos$pos.Mb * 1e+6, cM_likelihood = round(pos$pos.cM, 8),
+                                  bp_position = round(pos$pos.Mb * 1e+6), cM_likelihood = round(pos$pos.cM, 8),
                                   cM_deterministic = round(hap$gen, 8), 
                                   recrate_adjacent_deterministic = round(c(0, hap$probRec), 8), 
                                   Mbp_inter_marker_distanc = round(dis, 8), stringsAsFactors = FALSE)
@@ -85,7 +85,7 @@ save(genetic_map_summary, file = file.path(path.input, "genetic_map_summary.Rdat
 
 ### 3: table of recombination rates between adjacent SNPs for hotspot analysis 
 adjacentRecRate <- data.frame(Chr = geneticMap$Chr, SNP = geneticMap$Name, cM = round(geneticMap$cM_deterministic, 8),
-                              BP = geneticMap$bp_position, Theta = round(geneticMap$recrate_adjacent_deterministic, 8),
+                              BP = round(geneticMap$bp_position), Theta = round(geneticMap$recrate_adjacent_deterministic, 8),
                               Dis = c(0, diff(geneticMap$bp_position)), stringsAsFactors = FALSE)
 save(adjacentRecRate, file = file.path(path.input, "adjacentRecRate.Rdata"), compress = 'xz')
 

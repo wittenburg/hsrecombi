@@ -53,7 +53,7 @@ $(res_dir)/candidates_chr%.txt: 2_data_analysis_part_1.R $(dat_dir)/map_chr%.map
 $(dat_dir)/hsphase_input_chr%.raw
 	$(rbatch_chr)
 
-# NOTE: necessary to check all graphic pdf's and alter candidates_chr%_verified
+# NOTE: necessary to check all graphic png's and alter candidates_chr%_verified
 # manually, otherwise it contains NA for no SNP to be discarded!
 $(res_dir)/candidates_chr%_verified.txt: 3_graphics_part_1.R \
 $(res_dir)/Results_chr%.Rdata $(res_dir)/candidates_chr%.txt
@@ -64,7 +64,7 @@ $(res_dir)/geneticpositions_chr%.Rdata $(res_dir)/hsphase_output_chr%.Rdata: \
 $(res_dir)/candidates_chr%_verified.txt $(dat_dir)/hsphase_input_chr%.raw
 	$(rbatch_chr)
 
-$(res_dir)/genetic_map_chr%.pdf: 5_graphics_part_2.R \
+$(res_dir)/genetic_map_chr%.png: 5_graphics_part_2.R \
 $(res_dir)/geneticpositions_chr%.Rdata $(res_dir)/hsphase_output_chr%.Rdata \
 $(dat_dir)/pop.Rdata
 	$(rbatch_chr)
@@ -72,7 +72,7 @@ $(dat_dir)/pop.Rdata
 all: $(addprefix $(res_dir)/geneticpositions_chr, \
 $(addsuffix .Rdata, $(shell seq 1 $(nchr)))) \
 $(addprefix $(res_dir)/genetic_map_chr, \
-$(addsuffix .pdf, $(shell seq 1 $(nchr))))
+$(addsuffix .png, $(shell seq 1 $(nchr))))
 
 clean:
 	rm -rf $(res_dir) $(dat_dir) *.tmp
