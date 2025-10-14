@@ -1,43 +1,40 @@
 ### Output from pipeline "hsrecombi" is prepared as input for R-Shiny app "CLARITY"
 library(hsrecombi)
 library(magrittr)
-
-nchr <- 2
+library(dplyr)
 
 path.input <- "input_rshiny"
 dir.create(path.input, showWarnings = F)
 
 path.results <- read.table("directory.tmp")[1, 1]
 
+# output data
+ls <- list.files(pattern = "chr[0-9]+.Rdata", path = path.results)
+# extract chromosome number within file name
+chroms <- as.numeric(gsub("\\D", "", ls)) %>% unique
+
 
 ### 1: table of genetic map with all markers
 geneticMap <- list()
-for(chr in 1:nchr){
+for(chr in chroms){
   cat('Chr', chr, '\n')
   
   load(file.path(path.results, paste0('geneticpositions_chr', chr, '.Rdata')))
   dis <- c(0, diff(pos$pos.Mb))
   load(file.path(path.results, paste0('hsphase_output_chr', chr, '.Rdata')))
+  load(file.path(path.results, paste0('linkphase_output_chr', chr, '.Rdata')))
   
-  geneticMap[[chr]] <- data.frame(Chr = chr, Name = pos$name, Mbp_position = pos$pos.Mb, 
-                                  bp_position = round(pos$pos.Mb * 1e+6), cM_likelihood = round(pos$pos.cM, 8),
-                                  cM_deterministic = round(hap$gen, 8), 
-                                  recrate_adjacent_deterministic = round(c(0, hap$probRec), 8), 
-                                  Mbp_inter_marker_distanc = round(dis, 8), stringsAsFactors = FALSE)
+  out <- data.frame(Chr = chr, Name = names(pos$pos.cM), Mbp_position = pos$pos.Mb, 
+                                  bp_position = pos$pos.Mb * 1e+6, Lm_cM = pos$pos.cM, Dm_cM = hap$gen,  
+                                  Dm_recrate_adjacent = c(0, hap$probRec),  
+                                  Mbp_inter_marker_distance = dis, stringsAsFactors = FALSE)
+  
+  geneticMap[[chr]] <- merge(out, linkmap[, !(colnames(linkmap) %in% c('Chr', 'bp', 'MCS'))], by = 'Name', sort = F, all.x = T) 
 }
 
-geneticMap <- rlist::list.rbind(geneticMap)
-sum(is.na(geneticMap$cM_likelihood)) # no analysis at these SNPs because of overall homozygosity (with few exceptions)
-
-# list of misplaced markers
-geneticMap$candidate_misplacement <- 0
-for(chr in 1:29) {
-  candfile <- file.path(path.results, paste0('candidates_chr', chr, '_verified.txt'))
-  if(file.exists(candfile)) {
-    list.excl <- read.table(candfile)[, 1]
-    geneticMap$candidate_misplacement[geneticMap$Chr == chr][list.excl] <- 1
-  }
-}
+geneticMap <- rlist::list.rbind(geneticMap) %>% 
+  mutate(across(where(is.numeric), \(x) round(x, 8))) %>% 
+  arrange(Chr, bp_position)
 
 save(geneticMap, file = file.path(path.input, "geneticMap.Rdata"), compress = 'xz')
 #WriteXLS::WriteXLS(geneticMap, 'GeneticMap.xlsx', na = "NA", SheetNames = Sys.Date())
@@ -46,33 +43,50 @@ save(geneticMap, file = file.path(path.input, "geneticMap.Rdata"), compress = 'x
 
 ### 2: table of genetic map summary
 tab <- c()
-for(Chr in 1:nchr){
+for(Chr in chroms){
   load(file.path(path.results, paste0('hsphase_output_chr', Chr, '.Rdata'))) # estimated crossover events
   tab.chr <- geneticMap[geneticMap$Chr == Chr, ]
   nSNP <- nrow(tab.chr)
   max_bp <- max(tab.chr$bp_position)
   Gap_bp <- max(diff(tab.chr$bp_position))
   Space_kb <- mean(diff(tab.chr$bp_position)) * 1e-3
-  nRec <- lapply(hap$numberRec, function(z){sum(z, na.rm = T)}) %>% unlist %>% sum
-  D_M <- max(tab.chr$cM_deterministic, na.rm = T) / 100
-  cMMb_D <- max(tab.chr$cM_deterministic, na.rm = T) / (max_bp * 1e-6)
-  L_M <- max(tab.chr$cM_likelihood, na.rm = T) / 100
-  cMMb_L <- max(tab.chr$cM_likelihood, na.rm = T) / (max_bp * 1e-6)
-  tab <- rbind(tab, c(Chr, nSNP, max_bp, Gap_bp, Space_kb, nRec, D_M, cMMb_D, L_M, cMMb_L))
+  Dm_nRec <- lapply(hap$numberRec, function(z){sum(z, na.rm = T)}) %>% unlist %>% sum
+  Dm_M <- max(tab.chr$Dm_cM, na.rm = T) / 100
+  Dm_cMMb <- max(tab.chr$Dm_cM, na.rm = T) / (max_bp * 1e-6)
+  Lm_M <- max(tab.chr$Lm_cM, na.rm = T) / 100
+  Lm_cMMb <- max(tab.chr$Lm_cM, na.rm = T) / (max_bp * 1e-6)
+  #linkphase
+  load(file.path(path.results, paste0('linkphase_output_chr', Chr, '.Rdata')))
+  Hm_nRec <- nrec$male[, 2] %>% sum
+  Hf_nRec <- nrec$female[, 2] %>% sum
+  Ha_nRec <- nrec$average[, 2] %>% sum
+  Hm_M <- max(tab.chr$Hm_cM, na.rm = T) / 100
+  Hf_M <- max(tab.chr$Hf_cM, na.rm = T) / 100
+  Ha_M <- max(tab.chr$Ha_cM, na.rm = T) / 100
+  Hm_cMMb <- max(tab.chr$Hm_cM, na.rm = T) / (max_bp * 1e-6)
+  Hf_cMMb <- max(tab.chr$Hf_cM, na.rm = T) / (max_bp * 1e-6)
+  Ha_cMMb <- max(tab.chr$Ha_cM, na.rm = T) / (max_bp * 1e-6)
+  tab <- rbind(tab, c(chr, nSNP, max_bp, Gap_bp, Space_kb, Dm_nRec, Dm_M, Dm_cMMb, Lm_M, Lm_cMMb,
+                      Hm_nRec, Hm_M, Hm_cMMb, Hf_nRec, Hf_M, Hf_cMMb, Ha_nRec, Ha_M, Ha_cMMb))
 }
-colnames(tab) <- c("Chr", "nSNP", "max_bp", "Gap_bp", "Space_kb", "nRec", "D_M", "cMMb_D", "L_M", "cMMb_L")
+colnames(tab) <- c("Chr", "nSNP", "max_bp", "Gap_bp", "Space_kb", "Dm_nRec", "Dm_M", "Dm_cMMb", "Lm_M", "Lm_cMMb",
+                   "Hm_nRec", "Hm_M", "Hm_cMMb", "Hf_nRec", "Hf_M", "Hf_cMMb", "Ha_nRec", "Ha_M", "Ha_cMMb")
 
 end <- "#"
-for(i in 2:ncol(tab)){
-  if(i < 5) {
+for(i in colnames(tab)){
+  if(i == "Gap_bp"){
+    end <- c(end, max(tab[, i]))
+    tab[, i] <- round(tab[, i], 0)  
+  }
+  if(i %in% c("nSNP", "max_bp", "Dm_nRec", "Hm_nRec", "Hf_nRec", "Ha_nRec")) {
     end <- c(end, round(sum(tab[, i]), 0))
     tab[, i] <- round(tab[, i], 0)
   }
-  if(i == 6 || i == 7 || i == 9){
+  if(i %in% c("Dm_M", "Lm_M", "Hm_M", "Hf_M", "Ha_M")){
     end <- c(end, round(sum(tab[, i]), 3))
     tab[, i] <- round(tab[, i], 3)
   }
-  if(i==5 || i==8 || i==10){
+  if(i %in% c("Space_kb", "Dm_cMMb", "Lm_cMMb", "Hm_cMMb", "Hf_cMMb", "Ha_cMMb")){
     end <- c(end, round(mean(tab[, i]), 3))
     tab[, i] <- round(tab[, i], 3)
   }
@@ -83,10 +97,14 @@ save(genetic_map_summary, file = file.path(path.input, "genetic_map_summary.Rdat
 
 
 
-### 3: table of recombination rates between adjacent SNPs for hotspot analysis 
-adjacentRecRate <- data.frame(Chr = geneticMap$Chr, SNP = geneticMap$Name, cM = round(geneticMap$cM_deterministic, 8),
-                              BP = round(geneticMap$bp_position), Theta = round(geneticMap$recrate_adjacent_deterministic, 8),
-                              Dis = c(0, diff(geneticMap$bp_position)), stringsAsFactors = FALSE)
+### 3: table of recombination rates between adjacent SNPs for hotspot analysis
+adjacentRecRate <- data.frame(Chr = geneticMap$Chr, SNP = geneticMap$Name, BP = geneticMap$bp_position, 
+                              Dm_cM = geneticMap$Dm_cM, Dm_Theta = geneticMap$Dm_recrate_adjacent, 
+                              Hm_cM = geneticMap$Hm_cM, Hm_Theta = geneticMap$Hm_recrate_adjacent, 
+                              Hf_cM = geneticMap$Hf_cM, Hf_Theta = geneticMap$Hf_recrate_adjacent, 
+                              Ha_cM = geneticMap$Ha_cM, Ha_Theta = geneticMap$Ha_recrate_adjacent, 
+                              Dis = c(0, diff(geneticMap$bp_position)), stringsAsFactors = FALSE) %>% 
+  mutate(across(where(is.numeric), \(x) round(x, 8)))
 save(adjacentRecRate, file = file.path(path.input, "adjacentRecRate.Rdata"), compress = 'xz')
 
 
@@ -95,7 +113,7 @@ save(adjacentRecRate, file = file.path(path.input, "adjacentRecRate.Rdata"), com
 set.seed(10)
 
 out <- c()
-for (chr in 1:nchr){
+for (chr in chroms){
   store <- list()
   
   load(file.path(path.results, paste0('geneticpositions_chr', chr, '.Rdata')))

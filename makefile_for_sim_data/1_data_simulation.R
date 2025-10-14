@@ -19,7 +19,7 @@ SP <- SimParam$new(founderPop)
 SP$setSexes("yes_sys")
 # Enable tracing location of recombination events
 SP$setTrackRec(TRUE)  
-
+# N half-sib families with n progeny each
 pop <- newPop(founderPop)
 N <- 10; ntotal <- N * n
 my_pop <- selectCross(pop = pop, nFemale = 500, nMale = N, use = "rand", nCrosses = ntotal)
@@ -41,8 +41,11 @@ save(list = c('SP', 'founderPop', 'pop', 'my_pop', 'ntotal', 'probRec'), file = 
 
 ## ----genetic data-------------------------------------------------------------
 PAT <- my_pop@father
-rown <- paste(rep(unique(PAT), each = 2), c(1, 2), sep = '_')
-H.pat <- pullSegSiteHaplo(pop)[rown, ]
+DAD <- unique(PAT)
+MAT <- my_pop@mother
+MOM <- unique(MAT)
+X.mat <- pullSegSiteGeno(pop)[MOM, ]
+X.pat <- pullSegSiteGeno(pop)[DAD, ]
 X <- pullSegSiteGeno(my_pop)
 # Physical position of markers in Mbp
 map.snp <- lapply(founderPop@genMap, function(z) z * 100)
@@ -53,17 +56,19 @@ map <- data.frame(Chr = rep(1:length(map.snp), unlist(lapply(map.snp, length))),
                   locus_Mb = round(unlist(map.snp), 6), 
                   locus_bp = round(unlist(map.snp) * 1e+6))
 
-colnames(X) <- map$Name
+colnames(X) <- colnames(X.pat) <- colnames(X.mat) <- map$Name
 FID <- 'FAM001'
-IID <- my_pop@id
-MAT <- my_pop@mother
-SEX <- 2
+IID <- c(DAD, MOM, my_pop@id)
+MAT <- c(rep(0, length(DAD) + length(MOM)), MAT)
+PAT <- c(rep(0, length(DAD) + length(MOM)), PAT)
+SEX <- rep(2, length(IID))
+SEX[1:length(DAD)] <- 1
 PHENOTYPE <- -9
 
 for(chr in 1:nchr){
   write.table(map[map$Chr == chr, ], file.path(path, paste0('map_chr', chr, '.map')), 
               col.names = F, row.names = F, quote = F)
-  write.table(cbind(FID, IID, PAT, MAT, SEX, PHENOTYPE, X[, map$Chr == chr]), 
+  write.table(cbind(FID, IID, PAT, MAT, SEX, PHENOTYPE, rbind(X.pat, X.mat, X)[, map$Chr == chr]), 
               file.path(path, paste0('hsphase_input_chr', chr, '.raw')), 
               col.names = T, row.names = F, quote = F) 
 }
