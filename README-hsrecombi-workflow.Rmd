@@ -1,4 +1,4 @@
-# *hsrecombi*: workflow to create data for the shiny app CLARITY 
+## *hsrecombi*: workflow to create data for the shiny app CLARITY 
 
 
 D. Wittenburg, N. Melzer
