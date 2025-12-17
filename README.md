@@ -19,7 +19,7 @@ An online version of CLARITY is available at
 
 1.  The pipeline for creating a male genetic map from genotypes of
     paternal half-siblings with the hsrecombi approach ([Hampel et
-    al. 2018](https://doi.org/10.3389/fgene.2018.00186)) is available in
+    al. 2018](https://doi.org/10.3389/fgene.2018.00186)) is available in
     subfolder makefile_for\_\<real/sim\>\_data. The pipeline requires
     make version \>= 4.3; this version allows for grouped targeting.
     Ensure that required R packages have been installed
