@@ -1,8 +1,11 @@
-## *hsrecombi*: workflow to create data for the shiny app CLARITY 
+---
+title: "*hsrecombi*: workflow to create data for the shiny app CLARITY"
+author: "D. Wittenburg, N. Melzer"
+date: "(December 17, 2025)"
+output: 
+ github_document
+---
 
-
-D. Wittenburg, N. Melzer
-(December 17, 2025)
 
 ### Objective
 Create a genetic map and interactively visualise the outcome
