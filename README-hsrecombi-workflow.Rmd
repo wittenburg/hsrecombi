@@ -6,6 +6,14 @@ output:
  github_document
 ---
 
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = 400
+)
+```
 
 ### Objective
 Create a genetic map and interactively visualise the outcome
